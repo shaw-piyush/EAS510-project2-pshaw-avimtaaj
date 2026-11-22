@@ -1,0 +1,11 @@
+group,n_rows,n_two_turn,median_tokens,n_over_window,share_over_window,n_inorder_question_cut,n_inorder_question_lost,n_inorder_instruction_cut,n_lastfirst_question_cut,n_lastfirst_instruction_cut,n_lastfirst_instruction_lost
+mmlu,14037,0,106,1600,0.114,1600,0,0,1600,0,0
+hellaswag,10042,0,248,4251,0.4233,4251,0,0,4251,0,0
+arc-challenge,1470,0,83,0,0.0,0,0,0,0,0,0
+winogrande,1267,0,47,0,0.0,0,0,0,0,0,0
+chinese,766,612,105,0,0.0,0,0,0,0,0,0
+mbpp,423,0,19,0,0.0,0,0,0,0,0,0
+bias_detection,284,284,253,111,0.3908,111,0,0,0,111,0
+abstract2title,253,253,274,152,0.6008,152,0,0,136,152,137
+accounting_audit,30,30,172,1,0.0333,1,0,0,0,1,0
+ALL,28572,1179,121,6115,0.214,6115,0,0,5987,264,137
