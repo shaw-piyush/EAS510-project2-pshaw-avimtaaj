@@ -4,10 +4,10 @@ Nothing else in the repo should hard-code a seed, a path or a grid; import it
 from here. That way a run is fully described by this file plus the code, and
 `run_info.json` can snapshot it.
 
-Decisions D1-D11 (PRD Section 6.3) are agreed by Piyush and Avimta together.
-Values that depend on the data stay `None` with a `TODO(D#)` until agreed.
-Values copied from the PRD's recommended defaults are marked
-"PRD default, pending team agreement" so nobody mistakes them for final.
+Decisions D1-D11 (PRD Section 6.3) were decided on 2026-11-22: D1-D3, D11
+and the prompt format from the data check evidence, D4-D9 as the PRD
+defaults. D10 (the sample) waits on the TA. A `TODO(D#)` marks anything
+still to be confirmed.
 """
 
 from pathlib import Path
@@ -55,29 +55,80 @@ RESULTS_SAMPLE = RESULTS_DIR / "sample"
 RESULTS_FULL = RESULTS_DIR / "full"
 RESULTS_INTERIM = RESULTS_FULL / "interim"      # preliminary results only
 DATA_CHECK_DIR = RESULTS_FULL / "data_check"
+# scripts/truncation_check.py. Kept out of data_check/, which holds only what
+# scripts/data_check.py writes, so that folder can be rebuilt and compared
+# file for file.
+TRUNCATION_DIR = RESULTS_FULL / "truncation"
 
 # --------------------------------------------------------------------------
-# D1-D3, D11: data decisions (need the data check evidence first)
+# D1-D3, D11 and prompt format: data decisions (decided 2026-11-22 from the
+# data check evidence in results/full/data_check/). src/data.py applies them.
 # --------------------------------------------------------------------------
-# D2: the cheap/strong pair. Must be chosen from training-split statistics
-# (PRD 0.4), not from the whole dataset.
-CHEAP_MODEL = None      # TODO(D2)
-STRONG_MODEL = None     # TODO(D2)
+# D2: the cheap/strong pair. GPT-4 has the highest mean score; Mixtral is a
+# low-cost model with a large gap (model_summary.csv, 0/1 benchmarks:
+# 0.816 vs 0.552, Mixtral costs 4.1% of GPT-4), and it's the strong/weak
+# pair RouteLLM used (Ong et al., arXiv:2406.18665). Those means are over the whole dataset, so the ranking must be
+# re-checked on the training split only (PRD 0.4) once src/splits.py exists.
+STRONG_MODEL = "gpt-4-1106-preview"
+CHEAP_MODEL = "mistralai/mixtral-8x7b-chat"  # TODO(D2): confirm ranking on train split
 
-# D3: maps each raw `eval_name` subtask to its parent benchmark ("group").
-# Groups drive stratification and leave-one-benchmark-out; they are never
-# used as a feature (PRD 0.4).
-GROUP_MAP = None        # TODO(D3)
+# D3: each raw `eval_name` subtask maps to a parent benchmark ("group") by
+# prefix, matched case-insensitively (e.g. "Chinese_character_riddles"); a
+# subtask that matches no prefix is its own group. This is the mapping in
+# candidate_group_counts.csv: 86 subtasks -> 13 groups. Groups drive
+# stratification and held-out-benchmark splits; never a feature (PRD 0.4).
+GROUP_PREFIXES = [
+    ("mmlu-", "mmlu"),
+    ("mtbench", "mtbench"),
+    ("chinese", "chinese"),
+]
 
-# D1: benchmarks dropped because their scores are not 0/1, so "cheap model
-# is correct" is undefined for them.
-EXCLUDED_GROUPS = None  # TODO(D1)
+# D1: subtasks dropped because their scores aren't 0/1, so "the cheap model
+# is correct" is undefined for them (score_binary_by_eval.csv: every model
+# has fractional scores on exactly these six). 7,907 of 36,497 rows. Losing
+# GSM8K is flagged to the instructor; MBPP stays as the only free-form
+# benchmark.
+EXCLUDED_EVAL_NAMES = [
+    "chinese_idioms",
+    "consensus_summary",
+    "grade-school-math",
+    "mtbench",
+    "mtbench-math",
+    "mtbench-reference",
+]
 
-# D11: whether to drop exact duplicate prompts within a group.
-DROP_DUPLICATES_WITHIN_GROUP = None  # TODO(D11)
+# D3: whole groups dropped. test-match has 3 rows: too few to split 70/15/15
+# and too few to mean anything as a benchmark.
+EXCLUDED_GROUPS = ["test-match"]
+
+# D3: a group is held out on its own (leave-one-benchmark-out) only if it is
+# big enough for the test metrics to mean something: at least 250 rows, and
+# the cheap model both right and wrong at least 20 times, so ROC AUC and the
+# routing curve aren't decided by a handful of prompts. Smaller groups stay
+# in training for every split; they're just never the held-out test set.
+HELDOUT_MIN_ROWS = 250
+HELDOUT_MIN_CHEAP_RIGHT = 20
+HELDOUT_MIN_CHEAP_WRONG = 20
+
+# Prompt format. Prompts are stored as str(list_of_turns). We join the turns
+# into one text, LAST turn first. In two-turn prompts the first turn is
+# often a fixed instruction shared by every row of the benchmark
+# (prompt_format.csv: 12 subtasks) and the last turn is the actual question,
+# so putting the question first means MiniLM's 256-token truncation (D7)
+# cuts the shared instruction, not the question. One rule for every
+# feature set (TF-IDF, hand-built, embeddings).
+PROMPT_TURN_ORDER = "last_first"   # or "in_order"
+PROMPT_TURN_SEPARATOR = "\n\n"     # a blank line, so turns read as paragraphs
+
+# D11: duplicates are found on the final joined text within a group, before
+# splitting, so the same prompt can't land in both train and test. Keep the
+# first copy (pickle order). If the copies' scores disagree for any model,
+# drop every copy: keeping one would be an arbitrary choice of label.
+DEDUPE_WITHIN_GROUP = True
+DROP_CONFLICTING_DUPLICATES = True
 
 # --------------------------------------------------------------------------
-# D4: splits (PRD default, pending team agreement)
+# D4: splits (PRD default, decided 2026-11-22)
 # --------------------------------------------------------------------------
 # Random setting: 70/15/15 train/val/test, stratified by group, redrawn per seed.
 TRAIN_FRAC = 0.70
@@ -96,7 +147,7 @@ SETTINGS = ["random", "lobo"]
 # --------------------------------------------------------------------------
 FEATURE_SETS = ["tfidf", "handbuilt", "embedding"]
 
-# D5 (PRD default, pending team agreement). Word 1-2 grams catch short
+# D5 (PRD default, decided 2026-11-22). Word 1-2 grams catch short
 # phrases like "which of"; min_df=2 drops one-off tokens that can't
 # generalize; sublinear_tf damps very long prompts.
 TFIDF_PARAMS = {
@@ -108,7 +159,7 @@ TFIDF_PARAMS = {
 # SVD size differs by profile (see SAMPLE / FULL below): the sample has too
 # few rows to support 256 components.
 
-# D6 (PRD default, pending team agreement): the 13 hand-built features.
+# D6 (PRD default, decided 2026-11-22): the 13 hand-built features.
 # Several of these reveal a benchmark's format (e.g. answer choices for MMLU,
 # code keywords for MBPP); the report must say so.
 HANDBUILT_FEATURES = [
@@ -130,20 +181,24 @@ CODE_SYMBOLS = "{}[]();=<>_#"
 MATH_SYMBOLS = "+-*/^%$"
 CODE_KEYWORDS = ("def", "return", "import", "class", "for", "while")
 
-# D7 (PRD default, pending team agreement). Frozen embeddings only, no
+# D7 (PRD default, decided 2026-11-22). Frozen embeddings only, no
 # fine-tuning (scope). Normalized so cosine similarity is a dot product.
 EMBEDDING_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
 EMBEDDING_NORMALIZE = True
+# MiniLM reads at most 256 tokens (its max_seq_length) and drops the rest.
+# scripts/truncation_check.py checks this against the downloaded model.
+EMBEDDING_MAX_TOKENS = 256
 
 # --------------------------------------------------------------------------
-# D8: operating point (PRD default, pending team agreement)
+# D8: operating point (PRD default, decided 2026-11-22)
 # --------------------------------------------------------------------------
 # Cost needed to reach 95% of always-strong quality, read off the test curve
 # and also at the threshold chosen on validation.
 TARGET_QUALITY_FRAC = 0.95
 
 # --------------------------------------------------------------------------
-# D9: hyperparameter grids, selected by validation curve AUC
+# D9: hyperparameter grids, selected by validation curve AUC (PRD default,
+# decided 2026-11-22)
 # --------------------------------------------------------------------------
 # FULL grids for Piyush's routers are the PRD 7.6 starting values. Avimta
 # fills in hgb / rf / mlp.
