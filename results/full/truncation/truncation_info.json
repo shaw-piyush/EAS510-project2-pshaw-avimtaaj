@@ -1,0 +1,11 @@
+{
+  "model": "sentence-transformers/all-MiniLM-L6-v2",
+  "model_snapshot": "1110a243fdf4706b3f48f1d95db1a4f5529b4d41",
+  "window_tokens": 256,
+  "rows": "src/data.py load_data(): D1, D3 and D11 applied",
+  "n_rows": 28572,
+  "separator": "\n\n",
+  "joined_length_equals_sum_of_turns": true,
+  "transformers": "5.23.0",
+  "huggingface_hub": "2.4.0"
+}
