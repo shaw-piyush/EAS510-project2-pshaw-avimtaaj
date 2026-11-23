@@ -71,7 +71,10 @@ def load_prompts(limit=None):
     df = pd.read_pickle(config.RAW_PICKLE)[[ID_COL, PROMPT_COL]]
     if limit is not None:
         df = df.head(limit)
-    ids = df[ID_COL].astype(str).to_numpy()
+    # dtype=str gives a fixed-width unicode array ("<U..."), which np.save
+    # writes without pickle. An object array would be pickled, and loaders
+    # that refuse pickles (np.load default, EmbeddingFeatures) could not read it.
+    ids = df[ID_COL].to_numpy(dtype=str)
     texts = [flatten_prompt(p) for p in df[PROMPT_COL]]
     return ids, texts
 
