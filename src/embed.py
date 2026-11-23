@@ -2,7 +2,7 @@
 
 Usage:
     python -m src.embed --limit 50     # quick test on the first 50 prompts
-    python -m src.embed                # full run (only once flattening is agreed)
+    python -m src.embed                # full run (resumable; rerun if interrupted)
 
 Writes (full run):
     data/cache/emb_minilm.npy   float32, one row per prompt, L2-normalized
@@ -22,18 +22,23 @@ Design choices:
 - This is one of the three entry points allowed to use the network
   (PRD 0.10): it downloads the model from Hugging Face on first use.
 
-Prompt flattening:
-Prompts are stored as Python list literals in a string, e.g. "['turn 1', 'turn 2']"
-(results/full/data_check/prompt_format.csv). Until Piyush's src/data.py exists
-and the team has agreed how to flatten, this file uses a PROVISIONAL rule
-(parse the list, join turns with a blank line). The full run is refused while
-the rule is provisional, because embeddings of the wrong text would have to be
-redone. Reading the pickle directly is the PRD 5.1 workaround for a missing
-src/data.py.
+Prompt flattening (agreed 2026-11-22):
+Prompts are stored as Python list literals in a string, e.g. "['turn 1', 'turn 2']".
+We call src.data.flatten_prompt, the same function every other feature set
+uses, so TF-IDF, hand-built features and embeddings all read identical text.
+It puts the LAST turn first (config.PROMPT_TURN_ORDER): in two-turn prompts
+the first turn is often an instruction shared by the whole benchmark, and
+MiniLM only reads the first config.EMBEDDING_MAX_TOKENS tokens, so the
+question must come first to survive truncation.
+
+Which rows:
+Every row of the raw pickle is embedded, not only the rows load_data() keeps
+after D1/D3/D11. Consumers select rows by sample_id via emb_ids.npy. This
+costs some extra CPU time once, but if a data decision changes later the
+overnight run does not have to be redone.
 """
 
 import argparse
-import ast
 import json
 import sys
 import time
@@ -42,33 +47,17 @@ import numpy as np
 import pandas as pd
 
 import config
+from src.data import ID_COL, PROMPT_COL, flatten_prompt
 
-# Set to True only after Avimta and Piyush agree on flattening AND
-# flatten_prompt below calls (or matches) src/data.py. Bump FLATTEN_VERSION
-# whenever the rule changes, so old cached chunks are not reused.
-FLATTENING_AGREED = False
-FLATTEN_VERSION = "provisional-v1"
-
-ID_COL = "sample_id"   # from results/full/data_check/schema.csv
-PROMPT_COL = "prompt"  # from results/full/data_check/schema.csv
-
-
-def flatten_prompt(raw):
-    """Turn the stored list-string into the text we embed. PROVISIONAL.
-
-    ast.literal_eval parses the list safely (it only accepts literals, never
-    runs code) and turns the stored "\\n" escapes into real newlines. Turns
-    are joined with a blank line so the model sees them as separate
-    paragraphs. If parsing fails, fall back to the raw string rather than
-    dropping the prompt (the data check found no parse failures).
-    """
-    try:
-        turns = ast.literal_eval(raw)
-    except (ValueError, SyntaxError):
-        return str(raw)
-    if isinstance(turns, (list, tuple)):
-        return "\n\n".join(str(t) for t in turns)
-    return str(turns)
+# The full run is allowed once flattening is agreed (it was, on 2026-11-22,
+# and src.data.flatten_prompt implements it). The version string goes into
+# the chunk manifest, so changing the turn order or separator in config.py
+# makes old cached chunks refuse to mix with new ones.
+FLATTENING_AGREED = True
+FLATTEN_VERSION = (
+    f"data.flatten_prompt/{config.PROMPT_TURN_ORDER}/"
+    f"{config.PROMPT_TURN_SEPARATOR!r}"
+)
 
 
 def load_prompts(limit=None):
@@ -93,7 +82,12 @@ def load_model():
 
     # device="cpu": the brief targets CPU-only machines, and fixing the
     # device keeps runs comparable between Avimta's and Piyush's laptops.
-    return SentenceTransformer(config.EMBEDDING_MODEL, device="cpu")
+    model = SentenceTransformer(config.EMBEDDING_MODEL, device="cpu")
+    # Set the truncation length explicitly from config (it is MiniLM's
+    # default, 256) so the window Piyush's truncation check measured is the
+    # one actually used, even if a library update changes the default.
+    model.max_seq_length = config.EMBEDDING_MAX_TOKENS
+    return model
 
 
 def encode(model, texts):
@@ -113,6 +107,7 @@ def check_manifest(chunk_dir, n_prompts):
         "model": config.EMBEDDING_MODEL,
         "normalize": config.EMBEDDING_NORMALIZE,
         "flatten_version": FLATTEN_VERSION,
+        "max_tokens": config.EMBEDDING_MAX_TOKENS,
         "chunk_size": config.EMBED_CHUNK_SIZE,
         "n_prompts": n_prompts,
     }
