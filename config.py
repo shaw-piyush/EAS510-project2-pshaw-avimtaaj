@@ -59,18 +59,23 @@ DATA_CHECK_DIR = RESULTS_FULL / "data_check"
 # scripts/data_check.py writes, so that folder can be rebuilt and compared
 # file for file.
 TRUNCATION_DIR = RESULTS_FULL / "truncation"
+D2_CHECK_DIR = RESULTS_FULL / "d2_check"   # scripts/d2_check.py
 
 # --------------------------------------------------------------------------
 # D1-D3, D11 and prompt format: data decisions (decided 2026-11-22 from the
 # data check evidence in results/full/data_check/). src/data.py applies them.
 # --------------------------------------------------------------------------
 # D2: the cheap/strong pair. GPT-4 has the highest mean score; Mixtral is a
-# low-cost model with a large gap (model_summary.csv, 0/1 benchmarks:
-# 0.816 vs 0.552, Mixtral costs 4.1% of GPT-4), and it's the strong/weak
-# pair RouteLLM used (Ong et al., arXiv:2406.18665). Those means are over the whole dataset, so the ranking must be
-# re-checked on the training split only (PRD 0.4) once src/splits.py exists.
+# low-cost model with a large gap (model_summary.csv: mean scores on the
+# 0/1 benchmarks 0.816 vs 0.552; mean cost over all rows 4.1% of GPT-4's),
+# and it's the strong/weak
+# pair RouteLLM used (Ong et al., arXiv:2406.18665). Those means are over
+# the whole dataset, so scripts/d2_check.py re-checked them on the training
+# split only (PRD 0.4): GPT-4 ranks first in all 5 seeds, Mixtral trails by
+# 0.260-0.265 and costs 5.3-5.4% of GPT-4 on the rows src/data.py keeps
+# (results/full/d2_check/model_ranking_train.csv).
 STRONG_MODEL = "gpt-4-1106-preview"
-CHEAP_MODEL = "mistralai/mixtral-8x7b-chat"  # TODO(D2): confirm ranking on train split
+CHEAP_MODEL = "mistralai/mixtral-8x7b-chat"
 
 # D3: each raw `eval_name` subtask maps to a parent benchmark ("group") by
 # prefix, matched case-insensitively (e.g. "Chinese_character_riddles"); a
