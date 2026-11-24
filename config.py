@@ -60,6 +60,9 @@ DATA_CHECK_DIR = RESULTS_FULL / "data_check"
 # file for file.
 TRUNCATION_DIR = RESULTS_FULL / "truncation"
 D2_CHECK_DIR = RESULTS_FULL / "d2_check"   # scripts/d2_check.py
+# scripts/data_summary.py: row counts of the cleaned data, so the report's
+# numbers about it (rows, groups, cheap model's accuracy) trace to a file.
+DATA_SUMMARY_DIR = RESULTS_FULL / "data_summary"
 
 # --------------------------------------------------------------------------
 # D1-D3, D11 and prompt format: data decisions (decided 2026-11-22 from the
