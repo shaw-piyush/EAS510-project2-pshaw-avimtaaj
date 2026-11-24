@@ -1,0 +1,11 @@
+group,n_rows,share_of_rows,cheap_right,cheap_wrong,cheap_accuracy,strong_accuracy,heldout_eligible
+mmlu,14037,0.4913,8914,5123,0.6350,0.8119,True
+hellaswag,10042,0.3515,4187,5855,0.4169,0.8396,True
+arc-challenge,1470,0.0514,1223,247,0.8320,0.9619,True
+winogrande,1267,0.0443,700,567,0.5525,0.8193,True
+chinese,766,0.0268,183,583,0.2389,0.4817,True
+mbpp,423,0.0148,229,194,0.5414,0.6856,True
+bias_detection,284,0.0099,77,207,0.2711,0.3732,True
+abstract2title,253,0.0089,252,1,0.9960,1.0000,False
+accounting_audit,30,0.0010,19,11,0.6333,0.8000,False
+ALL,28572,1.0000,15784,12788,0.5524,0.8162,

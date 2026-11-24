@@ -267,6 +267,34 @@ def heldout_groups(df):
     return t.loc[t["heldout_eligible"], "group"].tolist()
 
 
+def group_summary(df):
+    """Per group, then ALL: rows, share of rows, and how often each model is right.
+
+    The report quotes these numbers (e.g. the cheap model's accuracy on the
+    cleaned data), so scripts/data_summary.py saves them and every such
+    number traces to a file under results/. Descriptive only: it reads the
+    whole cleaned set, and nothing is tuned on it.
+    """
+    eligible = set(heldout_groups(df))
+    # Largest group first; name breaks ties so the order never depends on row order.
+    parts = sorted(df.groupby("group"), key=lambda kv: (-len(kv[1]), kv[0]))
+    rows = []
+    for name, part in parts + [("ALL", df)]:
+        right = int(part["y"].sum())
+        rows.append({
+            "group": name,
+            "n_rows": len(part),
+            "share_of_rows": len(part) / len(df),
+            "cheap_right": right,
+            "cheap_wrong": len(part) - right,
+            "cheap_accuracy": right / len(part),
+            "strong_accuracy": float(part["q_strong"].mean()),
+            # Held-out eligibility is per group; it has no meaning for ALL.
+            "heldout_eligible": "" if name == "ALL" else name in eligible,
+        })
+    return pd.DataFrame(rows)
+
+
 if __name__ == "__main__":
     d = load_data()
     print()

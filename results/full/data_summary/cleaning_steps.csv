@@ -1,0 +1,5 @@
+step,rows_before,rows_after,rows_removed,note
+loaded,36497,36497,0,
+D1: drop subtasks with scores not 0/1,36497,28590,7907,"chinese_idioms, consensus_summary, grade-school-math, mtbench, mtbench-math, mtbench-reference"
+D3: drop excluded groups,28590,28587,3,test-match
+D11: drop duplicate text within a group,28587,28572,15,"9 extra copies, 6 rows in sets with conflicting scores"

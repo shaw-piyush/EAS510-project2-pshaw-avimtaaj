@@ -148,3 +148,25 @@ def test_heldout_rule_needs_rows_and_both_outcomes():
              + [1] * right + [0] * (n - 1 - right),       # small: one row too few
     })
     assert data.heldout_groups(df) == ["big"]
+
+
+# --- group summary (scripts/data_summary.py) ---------------------------------------
+def test_group_summary_counts_and_all_row():
+    df = pd.DataFrame({
+        "group": ["b"] * 2 + ["a"] * 2 + ["c"] * 4,   # a and b tie on size
+        "y":        [1, 0, 1, 1, 0, 0, 0, 1],
+        "q_strong": [1.0, 1.0, 0.0, 1.0, 1.0, 1.0, 0.0, 1.0],
+    })
+    s = data.group_summary(df)
+    # Largest group first, ties broken by name, ALL last.
+    assert s["group"].tolist() == ["c", "a", "b", "ALL"]
+    c, total = s.iloc[0], s.iloc[-1]
+    assert (c["n_rows"], c["cheap_right"], c["cheap_wrong"]) == (4, 1, 3)
+    assert c["cheap_accuracy"] == pytest.approx(0.25)
+    assert c["strong_accuracy"] == pytest.approx(0.75)
+    assert s["share_of_rows"].iloc[:-1].sum() == pytest.approx(1.0)
+    assert (total["n_rows"], total["cheap_right"]) == (8, 4)
+    assert total["cheap_accuracy"] == pytest.approx(0.5)
+    assert total["strong_accuracy"] == pytest.approx(6 / 8)
+    # Groups this small are never eligible to be held out (HELDOUT_MIN_ROWS).
+    assert s["heldout_eligible"].iloc[:-1].tolist() == [False, False, False]
