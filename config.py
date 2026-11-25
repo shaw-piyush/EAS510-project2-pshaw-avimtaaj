@@ -303,4 +303,17 @@ EMBED_BATCH_SIZE = 64
 # instead of starting again.
 EMBED_CHUNK_SIZE = 2000
 EMB_CHUNK_DIR = CACHE_DIR / "emb_chunks"
+
+# Bundled sample (data/make_sample.py, D10, PRD 8.3).
+# 2,000 rows: the top of D10's 1,500-2,000 range, so the small groups keep
+# enough rows to split 70/15/15, while `python main.py` stays fast.
+SAMPLE_N_ROWS = 2000
+# Every group gets at least this many rows (or all of it, if smaller), then
+# the rest is shared out in proportion to group size. Purely proportional
+# sampling would give accounting_audit (30 rows) about 2 rows, too few to
+# appear in train, validation AND test. 40 leaves a group about 6 rows in
+# each of validation and test.
+SAMPLE_MIN_PER_GROUP = 40
+SAMPLE_SEED = SEEDS[0]
+SAMPLE_INFO = SAMPLE_DIR / "SAMPLE_INFO.md"
 # === end Avimta ===
