@@ -224,8 +224,12 @@ GRIDS_FULL = {
     "knn": {"n_neighbors": [5, 15, 50, 100, 200, 400, 800, 1600],
             "weights": ["uniform", "distance"]},
     "kmeans": {"n_clusters": [2, 3, 5, 10, 25, 50, 100, 200], "n_init": [10]},
-    "hgb": None,  # Avimta
-    "rf": None,   # Avimta
+    # Avimta, PRD 8.5 starting values. max_iter is only a cap: early stopping
+    # (on a slice of the training rows) picks the number of trees.
+    "hgb": {"learning_rate": [0.05, 0.1], "max_leaf_nodes": [15, 31],
+            "max_iter": [300], "early_stopping": [True]},
+    "rf": {"n_estimators": [300], "max_depth": [None, 20], "min_samples_leaf": [1, 5],
+           "n_jobs": [-1]},
     "mlp": None,  # Avimta
 }
 
@@ -235,8 +239,12 @@ GRIDS_SAMPLE = {
     "lr": {"C": [0.1, 1], "max_iter": [2000]},
     "knn": {"n_neighbors": [15, 50], "weights": ["distance"]},
     "kmeans": {"n_clusters": [10, 25], "n_init": [10]},
-    "hgb": None,  # Avimta
-    "rf": None,   # Avimta
+    # Avimta: one grid point each (the first PRD 8.5 values) to keep the
+    # sample run fast.
+    "hgb": {"learning_rate": [0.05], "max_leaf_nodes": [15],
+            "max_iter": [300], "early_stopping": [True]},
+    "rf": {"n_estimators": [300], "max_depth": [None], "min_samples_leaf": [1],
+           "n_jobs": [-1]},
     "mlp": None,  # Avimta
 }
 

@@ -5,14 +5,18 @@ module. To add one, add its import and one line in ROUTERS (Avimta: one
 import and one registry line per router, nothing else; PRD 5.4).
 """
 
+from src.routers.hgb import HGBRouter
 from src.routers.kmeans import KMeansRouter
 from src.routers.knn import KNNRouter
 from src.routers.lr import LRRouter
+from src.routers.rf import RFRouter
 
 ROUTERS = {
     "lr": LRRouter,
     "knn": KNNRouter,
     "kmeans": KMeansRouter,
+    "hgb": HGBRouter,
+    "rf": RFRouter,
 }
 
 
