@@ -19,6 +19,7 @@ import itertools
 import json
 import time
 
+import config
 from src import features, metrics, policies, routers
 
 
@@ -46,9 +47,14 @@ def run_one(df, split, feature_set, router_name, grid, seed, profile, setting="r
     X_train = feats.fit_transform(train)
     X_val, X_test = feats.transform(val), feats.transform(test)
 
+    # Settings fixed by the feature set (e.g. kNN's distance metric), added
+    # to every grid point; they're not tuned (config.ROUTER_FEATURE_PARAMS).
+    fixed = config.ROUTER_FEATURE_PARAMS.get(router_name, {}).get(feature_set, {})
+
     # Selection on validation only (D9).
     best = None
-    for params in grid_points(grid):
+    for tuned in grid_points(grid):
+        params = {**fixed, **tuned}
         router = routers.make(router_name, seed, **params).fit(X_train, y_train)
         s_val = router.score(X_val)
         auc = metrics.curve_auc(metrics.routing_curve(s_val, *val_out))

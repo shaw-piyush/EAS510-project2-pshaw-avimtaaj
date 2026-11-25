@@ -1,7 +1,8 @@
 # EAS 510 Project 2: Interim Report
 
 **Classical vs. Neural LLM Routers on RouterBench**<br>
-Piyush Ranjan Shaw, Avimta Ajit Shahane · Repo: [github.com/shaw-piyush/EAS510-project2-pshaw-avimtaaj](https://github.com/shaw-piyush/EAS510-project2-pshaw-avimtaaj)
+Piyush Ranjan Shaw (50755499), Avimta Ajit Shahane (50745133)<br>
+Repo: [github.com/shaw-piyush/EAS510-project2-pshaw-avimtaaj](https://github.com/shaw-piyush/EAS510-project2-pshaw-avimtaaj)
 
 **Goal.** For each prompt, decide whether a cheap LLM (Mixtral-8x7B) is good enough or the prompt should go to a strong, expensive one (GPT-4). We compare a logistic regression baseline with kNN, k-means, gradient boosting (with a random forest check) and an MLP on RouterBench (0-shot), using TF-IDF, hand-built and sentence-embedding features. The embeddings are frozen (no fine-tuning), and no LLM is called. Routers are judged by the area under the quality-vs-cost curve and by the cost needed to reach 95% of GPT-4's quality.
 
