@@ -208,12 +208,22 @@ TARGET_QUALITY_FRAC = 0.95
 # D9: hyperparameter grids, selected by validation curve AUC (PRD default,
 # decided 2026-11-22)
 # --------------------------------------------------------------------------
-# FULL grids for Piyush's routers are the PRD 7.6 starting values. Avimta
+# FULL grids for Piyush's routers start from the PRD 7.6 values. Avimta
 # fills in hgb / rf / mlp.
+#
+# kNN and k-means widened on 2026-11-25 (Piyush's decision). With the PRD
+# grids, kNN picked the largest value (100 neighbours) on every feature set,
+# and k-means picked the smallest or the largest cluster count, so the best
+# setting could lie outside the grid. A validation-only check (seeds 0 and
+# 1, all feature sets, test never scored) found kNN peaking at 400-800
+# neighbours and falling by 1,600, and k-means' best count anywhere from 2
+# to 200. The widened grids put those peaks inside the range. Grids are
+# still selected on validation only; the test split is touched once.
 GRIDS_FULL = {
     "lr": {"C": [0.01, 0.1, 1, 10], "max_iter": [2000]},
-    "knn": {"n_neighbors": [5, 15, 50, 100], "weights": ["uniform", "distance"]},
-    "kmeans": {"n_clusters": [10, 25, 50, 100], "n_init": [10]},
+    "knn": {"n_neighbors": [5, 15, 50, 100, 200, 400, 800, 1600],
+            "weights": ["uniform", "distance"]},
+    "kmeans": {"n_clusters": [2, 3, 5, 10, 25, 50, 100, 200], "n_init": [10]},
     "hgb": None,  # Avimta
     "rf": None,   # Avimta
     "mlp": None,  # Avimta
@@ -231,6 +241,28 @@ GRIDS_SAMPLE = {
 }
 
 SELECTION_METRIC = "val_curve_auc"
+
+# Fixed router settings per feature set (PRD 7.4-7.5). Not tuned: they follow
+# from what the features are. src/experiment.py adds them to every grid point.
+# - kNN on TF-IDF and embeddings: cosine distance. Both are unit-length
+#   vectors (TF-IDF ends in a Normalizer, embeddings are normalized), so the
+#   direction carries the meaning. Search is brute force, because sklearn's
+#   tree indexes don't support cosine.
+# - kNN and k-means on the 13 hand-built features: standardize first, so a
+#   count in the thousands (n_chars) doesn't drown out a 0/1 flag; then
+#   Euclidean distance. TF-IDF and embeddings are clustered as they are.
+ROUTER_FEATURE_PARAMS = {
+    "knn": {
+        "tfidf": {"metric": "cosine", "scale": False},
+        "embedding": {"metric": "cosine", "scale": False},
+        "handbuilt": {"metric": "euclidean", "scale": True},
+    },
+    "kmeans": {
+        "tfidf": {"scale": False},
+        "embedding": {"scale": False},
+        "handbuilt": {"scale": True},
+    },
+}
 
 # --------------------------------------------------------------------------
 # Run profiles
