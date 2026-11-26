@@ -319,4 +319,14 @@ SAMPLE_N_ROWS = 2000
 SAMPLE_MIN_PER_GROUP = 40
 SAMPLE_SEED = SEEDS[0]
 SAMPLE_INFO = SAMPLE_DIR / "SAMPLE_INFO.md"
+
+# Multi-model routing (src/multimodel.py, PRD 8.6).
+# lambda trades probability of being right against relative cost. 0 means
+# "ignore cost". The log grid runs to 1,000 because cheap models' relative
+# costs can differ by under 1% of the strongest model's cost, and lambda
+# must be large enough for those small gaps to outweigh a probability
+# difference, or the curve never reaches the cheapest end.
+# 10^-3 to 10^3 in 31 steps (5 per factor of 10), written without numpy
+# so config.py keeps its plain-Python imports.
+MULTIMODEL_LAMBDAS = [0.0] + [round(10 ** (-3 + i / 5), 6) for i in range(31)]
 # === end Avimta ===
