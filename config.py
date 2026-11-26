@@ -224,9 +224,15 @@ GRIDS_FULL = {
     "knn": {"n_neighbors": [5, 15, 50, 100, 200, 400, 800, 1600],
             "weights": ["uniform", "distance"]},
     "kmeans": {"n_clusters": [2, 3, 5, 10, 25, 50, 100, 200], "n_init": [10]},
-    "hgb": None,  # Avimta
-    "rf": None,   # Avimta
-    "mlp": None,  # Avimta
+    # Avimta, PRD 8.5 starting values. max_iter is only a cap: early stopping
+    # (on a slice of the training rows) picks the number of trees.
+    "hgb": {"learning_rate": [0.05, 0.1], "max_leaf_nodes": [15, 31],
+            "max_iter": [300], "early_stopping": [True]},
+    "rf": {"n_estimators": [300], "max_depth": [None, 20], "min_samples_leaf": [1, 5],
+           "n_jobs": [-1]},
+    # max_iter is a cap; early stopping on a slice of TRAIN picks the epochs.
+    "mlp": {"hidden_layer_sizes": [(128,), (256, 128)], "alpha": [1e-4, 1e-3, 1e-2],
+            "early_stopping": [True], "max_iter": [200]},
 }
 
 # SAMPLE grids: one or two values per setting so `python main.py` stays well
@@ -235,9 +241,14 @@ GRIDS_SAMPLE = {
     "lr": {"C": [0.1, 1], "max_iter": [2000]},
     "knn": {"n_neighbors": [15, 50], "weights": ["distance"]},
     "kmeans": {"n_clusters": [10, 25], "n_init": [10]},
-    "hgb": None,  # Avimta
-    "rf": None,   # Avimta
-    "mlp": None,  # Avimta
+    # Avimta: one grid point each (the first PRD 8.5 values) to keep the
+    # sample run fast.
+    "hgb": {"learning_rate": [0.05], "max_leaf_nodes": [15],
+            "max_iter": [300], "early_stopping": [True]},
+    "rf": {"n_estimators": [300], "max_depth": [None], "min_samples_leaf": [1],
+           "n_jobs": [-1]},
+    "mlp": {"hidden_layer_sizes": [(128,)], "alpha": [1e-4],
+            "early_stopping": [True], "max_iter": [200]},
 }
 
 SELECTION_METRIC = "val_curve_auc"
@@ -295,4 +306,27 @@ EMBED_BATCH_SIZE = 64
 # instead of starting again.
 EMBED_CHUNK_SIZE = 2000
 EMB_CHUNK_DIR = CACHE_DIR / "emb_chunks"
+
+# Bundled sample (data/make_sample.py, D10, PRD 8.3).
+# 2,000 rows: the top of D10's 1,500-2,000 range, so the small groups keep
+# enough rows to split 70/15/15, while `python main.py` stays fast.
+SAMPLE_N_ROWS = 2000
+# Every group gets at least this many rows (or all of it, if smaller), then
+# the rest is shared out in proportion to group size. Purely proportional
+# sampling would give accounting_audit (30 rows) about 2 rows, too few to
+# appear in train, validation AND test. 40 leaves a group about 6 rows in
+# each of validation and test.
+SAMPLE_MIN_PER_GROUP = 40
+SAMPLE_SEED = SEEDS[0]
+SAMPLE_INFO = SAMPLE_DIR / "SAMPLE_INFO.md"
+
+# Multi-model routing (src/multimodel.py, PRD 8.6).
+# lambda trades probability of being right against relative cost. 0 means
+# "ignore cost". The log grid runs to 1,000 because cheap models' relative
+# costs can differ by under 1% of the strongest model's cost, and lambda
+# must be large enough for those small gaps to outweigh a probability
+# difference, or the curve never reaches the cheapest end.
+# 10^-3 to 10^3 in 31 steps (5 per factor of 10), written without numpy
+# so config.py keeps its plain-Python imports.
+MULTIMODEL_LAMBDAS = [0.0] + [round(10 ** (-3 + i / 5), 6) for i in range(31)]
 # === end Avimta ===
