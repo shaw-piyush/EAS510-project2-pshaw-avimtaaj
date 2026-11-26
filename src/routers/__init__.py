@@ -9,6 +9,7 @@ from src.routers.hgb import HGBRouter
 from src.routers.kmeans import KMeansRouter
 from src.routers.knn import KNNRouter
 from src.routers.lr import LRRouter
+from src.routers.mlp import MLPRouter
 from src.routers.rf import RFRouter
 
 ROUTERS = {
@@ -17,6 +18,7 @@ ROUTERS = {
     "kmeans": KMeansRouter,
     "hgb": HGBRouter,
     "rf": RFRouter,
+    "mlp": MLPRouter,
 }
 
 

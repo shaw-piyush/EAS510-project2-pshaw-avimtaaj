@@ -230,7 +230,9 @@ GRIDS_FULL = {
             "max_iter": [300], "early_stopping": [True]},
     "rf": {"n_estimators": [300], "max_depth": [None, 20], "min_samples_leaf": [1, 5],
            "n_jobs": [-1]},
-    "mlp": None,  # Avimta
+    # max_iter is a cap; early stopping on a slice of TRAIN picks the epochs.
+    "mlp": {"hidden_layer_sizes": [(128,), (256, 128)], "alpha": [1e-4, 1e-3, 1e-2],
+            "early_stopping": [True], "max_iter": [200]},
 }
 
 # SAMPLE grids: one or two values per setting so `python main.py` stays well
@@ -245,7 +247,8 @@ GRIDS_SAMPLE = {
             "max_iter": [300], "early_stopping": [True]},
     "rf": {"n_estimators": [300], "max_depth": [None], "min_samples_leaf": [1],
            "n_jobs": [-1]},
-    "mlp": None,  # Avimta
+    "mlp": {"hidden_layer_sizes": [(128,)], "alpha": [1e-4],
+            "early_stopping": [True], "max_iter": [200]},
 }
 
 SELECTION_METRIC = "val_curve_auc"
